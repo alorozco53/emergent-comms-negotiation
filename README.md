@@ -1,5 +1,15 @@
 # "Emergent Communication through Negotiation"
 
+-------------------
+
+> Forked version
+
+- Enabled Pytorch 1.4.0, CUDA 10.1 compatibility
+- [**TODO**] Remove warning about `torch.nn.functional.softmax` (found in [nets.py](nets.py))
+- Gotta wait for some episodes to run to have linguistic interactions
+
+-------------------
+
 Reproduce https://openreview.net/forum?id=Hk6WhagRW&amp;noteId=Hk6WhagRW , "Emergent Communication through Negotation", ICLR 2018 anonymous submission.
 
 ## To install

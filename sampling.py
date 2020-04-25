@@ -1,16 +1,18 @@
 import torch
 import numpy as np
 
+POOL_SIZE = 6
+SEQ_LEN = 3
 
-def sample_items(batch_size, num_values=6, seq_len=3, random_state=np.random):
+def sample_items(batch_size, num_values=POOL_SIZE, seq_len=SEQ_LEN, random_state=np.random):
     """
-    num_values 6 will give possible values: 0,1,2,3,4,5
+    num_values POOL_SIZE will give possible values: 0,1,2,3,4,5
     """
     pool = torch.from_numpy(random_state.choice(num_values, (batch_size, seq_len), replace=True))
     return pool
 
 
-def sample_utility(batch_size, num_values=6, seq_len=3, random_state=np.random):
+def sample_utility(batch_size, num_values=POOL_SIZE, seq_len=SEQ_LEN, random_state=np.random):
     u = torch.zeros(seq_len).long()
     while u.sum() == 0:
         u = torch.from_numpy(random_state.choice(num_values, (batch_size, seq_len), replace=True))
@@ -26,10 +28,10 @@ def sample_N(batch_size, random_state=np.random):
 
 
 def generate_batch(batch_size, random_state=np.random):
-    pool = sample_items(batch_size=batch_size, num_values=6, seq_len=3, random_state=random_state)
+    pool = sample_items(batch_size=batch_size, num_values=POOL_SIZE, seq_len=SEQ_LEN, random_state=random_state)
     utilities = []
-    utilities.append(sample_utility(batch_size=batch_size, num_values=6, seq_len=3, random_state=random_state))
-    utilities.append(sample_utility(batch_size=batch_size, num_values=6, seq_len=3, random_state=random_state))
+    utilities.append(sample_utility(batch_size=batch_size, num_values=POOL_SIZE, seq_len=SEQ_LEN, random_state=random_state))
+    utilities.append(sample_utility(batch_size=batch_size, num_values=POOL_SIZE, seq_len=SEQ_LEN, random_state=random_state))
     N = sample_N(batch_size=batch_size, random_state=random_state)
     return {
         'pool': pool,

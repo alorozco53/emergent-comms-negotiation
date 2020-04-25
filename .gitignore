@@ -104,3 +104,4 @@ model_saves/*
 merge.yaml
 merge.sh
 
+*~

@@ -53,7 +53,7 @@ class TermPolicy(nn.Module):
 
     def forward(self, thoughtvector, testing, eps=1e-8):
         logits = self.h1(thoughtvector)
-        term_probs = F.sigmoid(logits)
+        term_probs = torch.sigmoid(logits)
         matches_argmax_count = 0
 
         res_greedy = (term_probs.data >= 0.5).view(-1, 1).float()
@@ -113,7 +113,8 @@ class UtterancePolicy(nn.Module):
 
             log_g = None
             if not testing:
-                a = torch.multinomial(probs)
+                # a = torch.multinomial(probs)
+                a = torch.multinomial(probs, 1)
                 g = torch.gather(probs, 1, Variable(a.data))
                 log_g = g.log()
                 a = a.data
@@ -163,7 +164,8 @@ class ProposalPolicy(nn.Module):
 
             log_g = None
             if not testing:
-                a = torch.multinomial(probs)
+                # a = torch.multinomial(probs)
+                a = torch.multinomial(probs, 1)
                 g = torch.gather(probs, 1, Variable(a.data))
                 log_g = g.log()
                 a = a.data
@@ -178,7 +180,8 @@ class ProposalPolicy(nn.Module):
                 nodes.append(log_g)
             probs = probs + eps
             entropy += (- probs * probs.log()).sum(1).sum()
-            proposal[:, i] = a
+            # proposal[:, i] = a
+            proposal[:, i] = a.squeeze()
 
         return nodes, proposal, entropy, matches_argmax_count, stochastic_draws
 

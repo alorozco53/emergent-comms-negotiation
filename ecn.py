@@ -15,11 +15,13 @@ import sampling
 import rewards_lib
 import alive_sieve
 
+SEQ_LEN = 3
 
 def render_action(t, s, prop, term):
     agent = t % 2
     speaker = 'A' if agent == 0 else 'B'
-    utility = s.utilities[:, agent]
+    utility = s.utilities[:, agent].tolist()
+    prop_ = prop.tolist()
     print('  ', end='')
     if speaker == 'B':
         print('                                   ', end='')
@@ -28,9 +30,9 @@ def render_action(t, s, prop, term):
     else:
         print(' ' + ''.join([str(v) for v in s.m_prev[0].view(-1).tolist()]), end='')
         print(' %s:%s/%s %s:%s/%s %s:%s/%s' % (
-            utility[0][0], prop[0][0], s.pool[0][0],
-            utility[0][1], prop[0][1], s.pool[0][1],
-            utility[0][2], prop[0][2], s.pool[0][2],
+            utility[0][0], prop_[0][0], s.pool[0][0].tolist(),
+            utility[0][1], prop_[0][1], s.pool[0][1].tolist(),
+            utility[0][2], prop_[0][2], s.pool[0][2].tolist(),
         ), end='')
         print('')
         if t + 1 == s.N[0]:
@@ -67,11 +69,11 @@ class State(object):
         batch_size = N.size()[0]
         self.N = N
         self.pool = pool
-        self.utilities = torch.zeros(batch_size, 2, 3).long()
+        self.utilities = torch.zeros(batch_size, 2, SEQ_LEN).long()
         self.utilities[:, 0] = utilities[0]
         self.utilities[:, 1] = utilities[1]
 
-        self.last_proposal = torch.zeros(batch_size, 3).long()
+        self.last_proposal = torch.zeros(batch_size, SEQ_LEN).long()
         self.m_prev = torch.zeros(batch_size, 6).long()
 
     def cuda(self):
@@ -115,7 +117,7 @@ def run_episode(
 
     # next two tensofrs wont be sieved, they will stay same size throughout
     # entire batch, we will update them using sieve.out_idxes[...]
-    rewards = type_constr.FloatTensor(batch_size, 3).fill_(0)
+    rewards = type_constr.FloatTensor(batch_size, SEQ_LEN).fill_(0)
     num_steps = type_constr.LongTensor(batch_size).fill_(10)
     term_matches_argmax_count = 0
     utt_matches_argmax_count = 0
@@ -144,7 +146,7 @@ def run_episode(
             _prev_proposal = s.last_proposal
         else:
             # we do need to blank this one though :)
-            _prev_proposal = type_constr.LongTensor(sieve.batch_size, 3).fill_(0)
+            _prev_proposal = type_constr.LongTensor(sieve.batch_size, SEQ_LEN).fill_(0)
         nodes, term_a, s.m_prev, this_proposal, _entropy_loss, \
                 _term_matches_argmax_count, _utt_matches_argmax_count, _utt_stochastic_draws, \
                 _prop_matches_argmax_count, _prop_stochastic_draws = agent_model(
@@ -256,7 +258,7 @@ def run(enable_proposal, enable_comms, seed, prosocial, logfile, model_file, bat
         print('')
         return
     last_print = time.time()
-    rewards_sum = type_constr.FloatTensor(3).fill_(0)
+    rewards_sum = type_constr.FloatTensor(SEQ_LEN).fill_(0)
     steps_sum = 0
     count_sum = 0
     for d in ['logs', 'model_saves']:
@@ -270,7 +272,7 @@ def run(enable_proposal, enable_comms, seed, prosocial, logfile, model_file, bat
         'seed': seed
     }))
     last_save = time.time()
-    baseline = type_constr.FloatTensor(3).fill_(0)
+    baseline = type_constr.FloatTensor(SEQ_LEN).fill_(0)
     term_matches_argmax_count = 0
     num_policy_runs = 0
     utt_matches_argmax_count = 0
@@ -369,18 +371,19 @@ def run(enable_proposal, enable_comms, seed, prosocial, logfile, model_file, bat
                 safe_div(utt_matches_argmax_count, utt_stochastic_draws),
                 prop_matches_argmax_count / prop_stochastic_draws
             ))
-            f_log.write(json.dumps({
-                'episode': episode,
-                'avg_reward_0': rewards_sum[2] / count_sum,
-                'test_reward': test_rewards_sum / len(test_batches),
-                'avg_steps': steps_sum / count_sum,
-                'games_sec': count_sum / time_since_last,
-                'elapsed': time.time() - start_time,
-                'argmaxp_term': (term_matches_argmax_count / num_policy_runs),
-                'argmaxp_utt': safe_div(utt_matches_argmax_count, utt_stochastic_draws),
-                'argmaxp_prop': (prop_matches_argmax_count / prop_stochastic_draws)
-            }) + '\n')
-            f_log.flush()
+            # f_log.write(json.dumps({
+            #     'episode': episode,
+            #     'avg_reward_0': (rewards_sum[2] / count_sum).tolist(),
+            #     'test_reward': (test_rewards_sum / len(test_batches)).tolist(),
+            #     'avg_steps': (steps_sum / count_sum).tolist(),
+            #     'games_sec': count_sum / time_since_last,
+            #     'elapsed': time.time() - start_time,
+            #     'argmaxp_term': (term_matches_argmax_count / num_policy_runs).tolist(),
+            #     'argmaxp_utt': safe_div(utt_matches_argmax_count, utt_stochastic_draws),
+            #     # 'argmaxp_prop': (prop_matches_argmax_count / prop_stochastic_draws)
+            #     'argmaxp_prop': (prop_matches_argmax_count.tolist() / prop_stochastic_draws)
+            # }) + '\n')
+            # f_log.flush()
             last_print = time.time()
             steps_sum = 0
             rewards_sum.fill_(0)
